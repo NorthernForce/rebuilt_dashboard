@@ -1,14 +1,12 @@
 import { Tab, Tabs } from '@mui/material';
-import './App.css';
+import './Home.css';
 import { useState } from 'react';
 import { useEntry } from '@frc-web-components/react';
-import Teleop from './teleop/Teleop';
-import Auto from './auto/Auto';
-import ConnectionStatus from './components/ConnectionStatus';
-import DisconnectedNotice from './components/DisconnectedFromServerNotice';
-import NavigatableTreeDisplay from './components/NavigatableTreeDisplay';
-import MotorChip from './components/MotorChip';
-import ArmControl from './components/ArmControl';
+import Teleop from '../teleop/Teleop';
+import Auto from '../auto/Auto';
+import ConnectionStatus from '../components/ConnectionStatus';
+import NavigatableTreeDisplay from '../components/NavigatableTreeDisplay';
+import MotorChip from '../components/MotorChip';
 
 function TabPanel(props: { children?: React.ReactNode, selected: number, index: number }) {
     return <div hidden={props.selected !== props.index}>
@@ -16,9 +14,8 @@ function TabPanel(props: { children?: React.ReactNode, selected: number, index: 
     </div>
 }
 
-function App() {
+function Home() {
     let [selected, setSelected] = useState(0);
-    const [robotConnected, setRobotConnected] = useState(false);
     let [tabEntry, _setSelectedTab] = useEntry('/FWC/selectedTab', 0)
     const handleTabChange = (_event: React.ChangeEvent<{}>, newValue: number) => {
         if (tabsLocked) return;
@@ -36,7 +33,7 @@ function App() {
                         <Tab label="Autonomous" />
                         <Tab label="Settings" />
                     </Tabs>
-                    <ConnectionStatus sourceKey="/FWC/ConnectionStatus" changeConnectionStatus={setRobotConnected} />
+                    <ConnectionStatus sourceKey="/FWC/ConnectionStatus" />
                 </div>
                 <div style={{height: '100%'}}>
                     <TabPanel selected={tabsLocked ? tabEntry : selected} index={0}>
@@ -66,10 +63,9 @@ function App() {
                         </div>
                     </TabPanel>
                 </div>
-                <DisconnectedNotice isDisconnected={!robotConnected} />
             </div>
         </>
     );
 }
 
-export default App;
+export default Home;
