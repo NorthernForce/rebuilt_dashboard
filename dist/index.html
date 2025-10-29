@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRC Team 172 Dashboard | Reefscape 2025</title>
+  <script type="module" crossorigin src="/assets/main-DgMpQEHF.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BdWpN2sG.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header with FWC components -->
+        <header class="dashboard-header">
+            <div class="team-info">
+                <h1>Team <fwc-number-field source-key="/FMSInfo/FMSControlData" source-property="teamNumber"></fwc-number-field></h1>
+                <span class="alliance-indicator" id="allianceIndicator">STANDBY</span>
+            </div>
+            <div class="match-info">
+                <span class="match-time" id="matchTime">0:00</span>
+                <span class="stage-indicator" id="stageIndicator">PRE-MATCH</span>
+            </div>
+            <div class="connection-status">
+                <fwc-connection-indicator></fwc-connection-indicator>
+                <span>Robot</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="mainContent"></main>
+    </div>
+
+    <!-- Stage Templates -->
+    <template id="autoSelectionTemplate">
+        <div class="stage-container">
+            <h2 class="stage-title">Select Autonomous Routine</h2>
+            <div class="auto-grid" id="autoGrid"></div>
+            <div class="selected-auto-display">
+                <span>Selected: </span>
+                <strong id="selectedAutoName">None</strong>
+            </div>
+            <button class="btn btn-primary btn-large" id="btnToConfirmation" disabled>
+                Next: Confirm Information →
+            </button>
+        </div>
+    </template>
+
+    <template id="confirmationTemplate">
+        <div class="stage-container">
+            <h2 class="stage-title">Confirm Match Information</h2>
+            <div class="confirmation-grid">
+                <div class="info-card">
+                    <h3>Team Information</h3>
+                    <div class="info-row">
+                        <span class="info-label">Team Number:</span>
+                        <span class="info-value">
+                            <fwc-number-field source-key="/FMSInfo/FMSControlData" source-property="teamNumber"></fwc-number-field>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Event Name:</span>
+                        <span class="info-value">
+                            <fwc-string-field source-key="/FMSInfo" source-property="eventName"></fwc-string-field>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>Match Assignment</h3>
+                    <div class="info-row">
+                        <span class="info-label">Match Type:</span>
+                        <span class="info-value">
+                            <fwc-string-field source-key="/FMSInfo" source-property="matchType"></fwc-string-field>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Match Number:</span>
+                        <span class="info-value">
+                            <fwc-number-field source-key="/FMSInfo" source-property="matchNumber"></fwc-number-field>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-card alliance-card">
+                    <h3>Alliance & Position</h3>
+                    <div class="info-row">
+                        <span class="info-label">Alliance:</span>
+                        <span class="info-value">
+                            <fwc-string-field source-key="/FMSInfo" source-property="alliance"></fwc-string-field>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Station:</span>
+                        <span class="info-value">
+                            <fwc-number-field source-key="/FMSInfo" source-property="stationNumber"></fwc-number-field>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-card auto-card-confirm">
+                    <h3>Selected Autonomous</h3>
+                    <div class="auto-display-large">
+                        <div class="auto-icon-large" id="confirmAutoIcon">🎯</div>
+                        <div class="auto-name-large" id="confirmAutoName">Center Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" id="btnBackToAuto">
+                    ← Back to Auto Selection
+                </button>
+                <button class="btn btn-primary btn-large" id="btnToAutonomous">
+                    Start Match / Begin Autonomous →
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <template id="autonomousTemplate">
+        <div class="stage-container-full">
+            <div class="auto-header">
+                <h2 class="stage-title-inline">AUTONOMOUS</h2>
+                <div class="auto-timer" id="autoTimer">15</div>
+            </div>
+            
+            <div class="autonomous-layout">
+                <div class="field-visualization">
+                    <fwc-field source-key="/Dashboard" source-property="Field"></fwc-field>
+                </div>
+                
+                <div class="auto-sidebar">
+                    <div class="status-panel">
+                        <h3>Routine Status</h3>
+                        <div class="routine-name" id="autoRoutineName">
+                            <fwc-string-field source-key="/Dashboard/Auto" source-property="routine"></fwc-string-field>
+                        </div>
+                        <fwc-bar source-key="/Dashboard/Auto" source-property="progress" min="0" max="100"></fwc-bar>
+                        <div class="step-indicator" id="autoSteps"></div>
+                    </div>
+                    
+                    <div class="telemetry-panel">
+                        <h3>Live Telemetry</h3>
+                        <div class="telemetry-item">
+                            <span>Position X:</span>
+                            <fwc-number-field source-key="/Dashboard/Telemetry" source-property="x"></fwc-number-field>
+                        </div>
+                        <div class="telemetry-item">
+                            <span>Position Y:</span>
+                            <fwc-number-field source-key="/Dashboard/Telemetry" source-property="y"></fwc-number-field>
+                        </div>
+                        <div class="telemetry-item">
+                            <span>Heading:</span>
+                            <fwc-number-field source-key="/Dashboard/Telemetry" source-property="heading"></fwc-number-field>°
+                        </div>
+                        <div class="telemetry-item">
+                            <span>Velocity:</span>
+                            <fwc-number-field source-key="/Dashboard/Telemetry" source-property="velocity"></fwc-number-field> m/s
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="teleopTemplate">
+        <div class="stage-container-full">
+            <div class="teleop-header">
+                <h2 class="stage-title-inline">TELEOPERATED</h2>
+                <div class="teleop-timer" id="teleopTimer">135</div>
+            </div>
+            
+            <div class="teleop-layout">
+                <div class="camera-feed-container">
+                    <fwc-camera source-key="/CameraPublisher/USB Camera 0" fit="contain"></fwc-camera>
+                    <div class="camera-overlay">
+                        <div class="crosshair"></div>
+                    </div>
+                </div>
+                
+                <div class="teleop-sidebar">
+                    <div class="scoring-panel">
+                        <h3>Scoring Status</h3>
+                        <div class="score-grid">
+                            <div class="score-item">
+                                <div class="score-label">Coral Scored</div>
+                                <div class="score-value">
+                                    <fwc-number-field source-key="/Dashboard/Scoring" source-property="coral"></fwc-number-field>
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <div class="score-label">Algae Scored</div>
+                                <div class="score-value">
+                                    <fwc-number-field source-key="/Dashboard/Scoring" source-property="algae"></fwc-number-field>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="reef-alignment-panel">
+                        <h3>Reef Alignment</h3>
+                        <div class="alignment-visual">
+                            <div class="alignment-text">
+                                Distance: <fwc-number-field source-key="/Dashboard/Alignment" source-property="distance"></fwc-number-field> cm
+                            </div>
+                            <div class="alignment-text">
+                                Angle: <fwc-number-field source-key="/Dashboard/Alignment" source-property="angle"></fwc-number-field>°
+                            </div>
+                            <div class="indicator-row ready-indicator">
+                                <span class="indicator-label">Ready to Score:</span>
+                                <fwc-boolean-box source-key="/Dashboard/Alignment" source-property="aligned"></fwc-boolean-box>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="robot-status-panel">
+                        <h3>Robot Status</h3>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <span>Battery:</span>
+                                <fwc-voltage-view source-key="/Dashboard" source-property="battery" precision="1" hide-label></fwc-voltage-view>
+                            </div>
+                            <div class="status-item">
+                                <span>Intake:</span>
+                                <fwc-string-field source-key="/Dashboard/Subsystems" source-property="intake"></fwc-string-field>
+                            </div>
+                            <div class="status-item">
+                                <span>Shooter:</span>
+                                <fwc-string-field source-key="/Dashboard/Subsystems" source-property="shooter"></fwc-string-field>
+                            </div>
+                            <div class="status-item">
+                                <span>Climber:</span>
+                                <fwc-string-field source-key="/Dashboard/Subsystems" source-property="climber"></fwc-string-field>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="postGameTemplate">
+        <div class="stage-container">
+            <h2 class="stage-title">Match Complete</h2>
+            
+            <div class="match-result">
+                <div class="result-banner">
+                    <div class="result-text">MATCH ENDED</div>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card highlight-card">
+                    <h3>Total Points</h3>
+                    <div class="stat-value-large">
+                        <fwc-number-field source-key="/Dashboard/Stats" source-property="totalPoints"></fwc-number-field>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Autonomous</h3>
+                    <div class="stat-breakdown">
+                        <div class="stat-row">
+                            <span>Points:</span>
+                            <fwc-number-field source-key="/Dashboard/Stats" source-property="autoPoints"></fwc-number-field>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Teleoperated</h3>
+                    <div class="stat-breakdown">
+                        <div class="stat-row">
+                            <span>Coral Scored:</span>
+                            <fwc-number-field source-key="/Dashboard/Scoring" source-property="coral"></fwc-number-field>
+                        </div>
+                        <div class="stat-row">
+                            <span>Algae Scored:</span>
+                            <fwc-number-field source-key="/Dashboard/Scoring" source-property="algae"></fwc-number-field>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>End Game</h3>
+                    <div class="stat-breakdown">
+                        <div class="stat-row">
+                            <span>Points:</span>
+                            <fwc-number-field source-key="/Dashboard/Stats" source-property="endGamePoints"></fwc-number-field>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary btn-large" id="btnNewMatch">
+                🔄 Start New Match
+            </button>
+        </div>
+    </template>
+</body>
+</html>
