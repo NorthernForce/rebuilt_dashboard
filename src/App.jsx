@@ -17,7 +17,7 @@ export default function App() {
   });
 
   const goToStage = (newStage) => {
-    console.log('Switching to stage:', newStage);
+    // console.log('Switching to stage:', newStage);
     setStage(newStage);
   };
 

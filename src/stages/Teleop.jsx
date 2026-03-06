@@ -33,6 +33,7 @@ export default function Teleop({ goToStage, setMatchStats }) {
           setTimeout(() => goToStage('postGame'), 1000);
           return 0;
         }
+        document.getElementById('matchTime').textContent = `${Math.floor(prev / 60)}:${(prev % 60).toString().padStart(2, '0')}`;
         return prev - 1;
       });
     }, 1000);
@@ -45,10 +46,6 @@ export default function Teleop({ goToStage, setMatchStats }) {
 
   return (
     <div className="stage-container-full">
-      <div className="teleop-header">
-        <h2 className="stage-title-inline">TELEOPERATED</h2>
-        <div className="teleop-timer">{minutes}:{seconds.toString().padStart(2, '0')}</div>
-      </div>
 
       <div className="teleop-layout">
         <div className="camera-feed-container">

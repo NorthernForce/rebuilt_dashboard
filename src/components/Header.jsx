@@ -2,11 +2,12 @@ import { useEntry } from '@frc-web-components/react/networktables';
 
 export default function Header({ stage }) {
   const [fmsInfo] = useEntry('/FMSInfo', { IsRedAlliance: false });
-  const [connected] = useEntry('/.connection/connected', false);
 
   const teamNumber = 172;
   const isRedAlliance = fmsInfo?.IsRedAlliance || false;
-
+  const type = fmsInfo['.type'] || '';
+  // console.log("FMS Info:", fmsInfo);
+  // console.log("FMS Info type:", type);
   const stageNames = {
     autoSelection: 'AUTO SELECTION',
     confirmation: 'CONFIRMATION',
@@ -17,6 +18,7 @@ export default function Header({ stage }) {
 
   const allianceClass = isRedAlliance ? 'alliance-red' : 'alliance-blue';
   const allianceText = isRedAlliance ? 'RED ALLIANCE' : 'BLUE ALLIANCE';
+  const connected = type !== "";
 
   return (
     <header className="dashboard-header">

@@ -2,19 +2,25 @@ import { useEntry } from '@frc-web-components/react/networktables';
 
 export default function Confirmation({ selectedAuto, goToStage }) {
   const [fmsInfo] = useEntry('/FMSInfo', {
-    EventName: 'Practice',
-    MatchType: 'Qualification',
-    MatchNumber: 1,
-    IsRedAlliance: false,
+    EventName: '[No event name]',
+    MatchType: '[No match type]',
+    MatchNumber: '[No match number]',
+    IsRedAlliance: null,
     StationNumber: 1
   });
 
-  const teamNumber = 172;
-  const eventName = fmsInfo?.EventName || 'Practice';
-  const matchType = fmsInfo?.MatchType || 'Qualification';
-  const matchNumber = fmsInfo?.MatchNumber || 1;
-  const alliance = fmsInfo?.IsRedAlliance ? 'Red' : 'Blue';
+  const [systemStats] = useEntry('/SystemStats', {
+    BatteryVoltage: null,
+    TeamNumber: 172,
+  });
+
+  const eventName = fmsInfo?.EventName || '[No event name]';
+  const matchType = fmsInfo?.MatchType || '[No match type]';
+  const matchNumber = fmsInfo?.MatchNumber || '[No match number]';
+  const alliance = fmsInfo?.IsRedAlliance ? 'Red' : 'Blue' || '[No alliance]';
   const stationNumber = fmsInfo?.StationNumber || 1;
+  const batteryVoltage = systemStats?.BatteryVoltage || '[No voltage]';
+  const teamNumber = systemStats?.TeamNumber || '[No team number]';
 
   return (
     <div className="stage-container">
@@ -59,7 +65,6 @@ export default function Confirmation({ selectedAuto, goToStage }) {
         <div className="info-card auto-card-confirm">
           <h3>Selected Autonomous</h3>
           <div className="auto-display-large">
-            <div className="auto-icon-large">{selectedAuto?.icon || '🎯'}</div>
             <div className="auto-name-large">{selectedAuto?.name || 'None'}</div>
           </div>
         </div>
@@ -69,7 +74,7 @@ export default function Confirmation({ selectedAuto, goToStage }) {
         <button className="btn btn-secondary" onClick={() => goToStage('autoSelection')}>
           ← Back to Auto Selection
         </button>
-        <button className="btn btn-primary btn-large" onClick={() => goToStage('autonomous')}>
+        <button className="btn btn-primary btn-large" onClick={() => { document.documentElement.requestFullscreen.call(document.documentElement); goToStage('autonomous') }}>
           Start Match / Begin Autonomous →
         </button>
       </div>

@@ -31,10 +31,6 @@ export default function Autonomous({ selectedAuto, goToStage }) {
 
   return (
     <div className="stage-container-full">
-      <div className="auto-header">
-        <h2 className="stage-title-inline">AUTONOMOUS</h2>
-        <div className="auto-timer">{timeRemaining}</div>
-      </div>
 
       <div className="autonomous-layout">
         <div className="field-visualization">

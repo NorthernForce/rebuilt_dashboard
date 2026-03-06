@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`Dashboard server running on http://localhost:${PORT}`);
+  // console.log(`Dashboard server running on http://localhost:${PORT}`);
 });
 
 // NetworkTables client for robot communication
@@ -35,37 +35,38 @@ const robotAddresses = [
 
 let connected = false;
 let currentAddress = null;
+let connectionIndex = 0;
 
 function connectToRobot() {
   if (connected) return;
-  
-  const address = robotAddresses.find(() => true); // Try first address
-  
+    
   ntClient.start((isConnected, connectionInfo) => {
     if (isConnected) {
       connected = true;
       currentAddress = connectionInfo.remote_ip;
-      console.log(`Connected to robot at ${connectionInfo.remote_ip}`);
-      console.log('NetworkTables client ready');
+      // console.log(`Connected to robot at ${connectionInfo.remote_ip}`);
+      // console.log('NetworkTables client ready');
       setupNetworkTablesListeners();
     } else {
       connected = false;
-      console.log('Waiting for robot connection...');
-      setTimeout(connectToRobot, 3000);
+      // console.log(`Failed to connect to robot at ${connectionInfo.remote_ip}`);
+      // console.log('Waiting for robot connection...');
+      setTimeout(connectToRobot, 1000);
     }
-  }, robotAddresses[0]);
+  }, robotAddresses[connectionIndex % robotAddresses.length]);
+  connectionIndex++;
 }
 
 function setupNetworkTablesListeners() {
   // Dashboard will read these NetworkTables entries
-  console.log('Listening for NetworkTables updates from robot');
-  console.log('Robot should publish to these tables:');
-  console.log('  - /Dashboard/FMS/*');
-  console.log('  - /Dashboard/Telemetry/*');
-  console.log('  - /Dashboard/Auto/*');
-  console.log('  - /Dashboard/Scoring/*');
-  console.log('  - /Dashboard/Alignment/*');
-  console.log('  - /Dashboard/MatchState');
+  // console.log('Listening for NetworkTables updates from robot');
+  // console.log('Robot should publish to these tables:');
+  // console.log('  - /Dashboard/FMS/*');
+  // console.log('  - /Dashboard/Telemetry/*');
+  // console.log('  - /Dashboard/Auto/*');
+  // console.log('  - /Dashboard/Scoring/*');
+  // console.log('  - /Dashboard/Alignment/*');
+  // console.log('  - /Dashboard/MatchState');
 }
 
 // Start connection attempt
@@ -99,4 +100,4 @@ app.post('/api/nt/Dashboard/Commands/:command', (req, res) => {
   }
 });
 
-console.log('NetworkTables client initialized for FRC communication');
+// console.log('NetworkTables client initialized for FRC communication');

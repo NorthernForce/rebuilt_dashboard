@@ -29,9 +29,9 @@ window.dashboardState = new DashboardState();
 
 // Application initialization
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('FRC Dashboard initialized');
-    console.log('Team 172 - Northern Force');
-    console.log('Reefscape 2025');
+    // console.log('FRC Dashboard initialized');
+    // console.log('Team 172 - Northern Force');
+    // console.log('Reefscape 2025');
 
     // All modules are already initialized via their own scripts
     // This is just for any final setup or logging
@@ -65,17 +65,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Display keyboard shortcuts info
-    console.log('Keyboard shortcuts (Debug):');
-    console.log('Ctrl+Shift+1-5: Jump to stage');
-    console.log('Ctrl+Shift+R: Reset dashboard');
+    // console.log('Keyboard shortcuts (Debug):');
+    // console.log('Ctrl+Shift+1-5: Jump to stage');
+    // console.log('Ctrl+Shift+R: Reset dashboard');
 });
 
 // Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        console.log('Dashboard hidden');
+        // console.log('Dashboard hidden');
     } else {
-        console.log('Dashboard visible');
+        // console.log('Dashboard visible');
         // Could request fresh data here
     }
 });
