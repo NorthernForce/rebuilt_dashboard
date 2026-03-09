@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync-paths": "node scripts/sync-paths.js",
+    "sync-paths:watch": "node scripts/sync-paths.js --watch",
+    "dev:sync": "node scripts/sync-paths.js && vite",
+    "start": "node scripts/sync-paths.js && vite --host"
   },
   "keywords": [
     "frc",

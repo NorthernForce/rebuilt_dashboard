@@ -5,9 +5,9 @@
    ======================================== */
 
 .auto-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
     margin-bottom: var(--spacing-xl);
 }
 
@@ -15,7 +15,7 @@
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     cursor: pointer;
     transition: border-color var(--transition-fast);
 }
@@ -182,9 +182,10 @@
 }
 
 .autonomous-layout {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    height: calc(100vh - 120px);
 }
 
 .field-visualization {
@@ -192,30 +193,29 @@
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
     overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-#fieldCanvas {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: var(--radius-sm);
-}
-
-.path-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
+.field-visualization .field-map-container {
     width: 100%;
     height: 100%;
-    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+/* fieldCanvas and path-overlay removed — replaced by FieldMap component */
 
 .auto-sidebar {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg);
 }
 
 .status-panel,
@@ -223,24 +223,26 @@
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .status-panel h3,
 .telemetry-panel h3 {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: var(--spacing-md);
     color: var(--color-text-secondary);
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .routine-name {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
     text-align: center;
     margin-bottom: var(--spacing-md);
     color: var(--color-text-primary);
+    letter-spacing: 0.5px;
 }
 
 .progress-bar {
@@ -318,9 +320,10 @@
 }
 
 .teleop-layout {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    height: calc(100vh - 120px);
 }
 
 .camera-feed-container {
@@ -422,29 +425,44 @@
     color: var(--color-success);
 }
 
-.teleop-sidebar {
+.teleop-sidebar,
+.teleop-info-bar {
     display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.auto-info-bar {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.info-bar-panel {
+    flex: 1;
+    min-width: 250px;
 }
 
 .scoring-panel,
-.reef-alignment-panel,
+.turret-status-panel,
 .robot-status-panel {
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .scoring-panel h3,
-.reef-alignment-panel h3,
+.turret-status-panel h3,
 .robot-status-panel h3 {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: var(--spacing-md);
     color: var(--color-text-secondary);
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .score-grid {
@@ -552,8 +570,162 @@
     color: var(--color-success);
 }
 
+/* Scoring inline display */
+.score-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.score-inline .score-label {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+}
+
+.score-inline .score-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: var(--color-success);
+}
+
+/* Compact telemetry row */
+.telemetry-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.telemetry-item-compact {
+    display: flex;
+    gap: var(--spacing-xs);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.8rem;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-bg-dark);
+    border-radius: var(--radius-sm);
+    flex: 1;
+    justify-content: space-between;
+}
+
+/* Compact status row */
+.status-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.status-item-compact {
+    display: flex;
+    gap: var(--spacing-xs);
+    font-size: 0.8rem;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-bg-dark);
+    border-radius: var(--radius-sm);
+    flex: 1;
+    justify-content: space-between;
+}
+
 .status-icon {
     font-size: 1rem;
+}
+
+/* Scoring display for single game piece */
+.score-display {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.score-item-full {
+    text-align: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg-dark);
+    border-radius: var(--radius-sm);
+}
+
+.score-item-full.points-row {
+    background: rgba(76, 175, 120, 0.1);
+    border: 1px solid rgba(76, 175, 120, 0.3);
+}
+
+/* Turret Status Panel */
+.turret-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.turret-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.turret-item,
+.turret-item-compact {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-bg-dark);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex: 1;
+    min-width: 0;
+}
+
+.turret-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    min-width: 100px;
+}
+
+.turret-values {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.turret-current {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.turret-separator {
+    color: var(--color-text-muted);
+}
+
+.turret-target {
+    color: var(--color-text-secondary);
+}
+
+.turret-unit {
+    color: var(--color-text-muted);
+    font-size: 0.7rem;
+    margin-left: 2px;
+}
+
+.turret-indicator {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    background: rgba(217, 74, 74, 0.2);
+    color: var(--color-danger);
+    border: 1px solid rgba(217, 74, 74, 0.3);
+}
+
+.turret-indicator.at-target {
+    background: rgba(76, 175, 120, 0.2);
+    color: var(--color-success);
+    border-color: rgba(76, 175, 120, 0.3);
 }
 
 .status-grid {
@@ -724,41 +896,277 @@
     font-size: 0.875rem;
 }
 
-/* Responsive Design for Stages */
+/* ========================================
+   FIELD MAP COMPONENT
+   ======================================== */
+
+.field-map-container {
+    position: relative;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    max-height: 100%;
+}
+
+.field-map-container canvas {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    display: block;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+}
+
+/* ========================================
+   AUTO SELECTION LAYOUT WITH PREVIEW
+   ======================================== */
+
+.auto-selection-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    height: calc(100vh - 160px);
+    min-height: 400px;
+}
+
+.auto-grid-column {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.auto-grid-column .auto-grid {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding-right: var(--spacing-xs);
+}
+
+.auto-grid-column .auto-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.auto-grid-column .auto-grid::-webkit-scrollbar-track {
+    background: var(--color-bg-dark);
+    border-radius: 3px;
+}
+
+.auto-grid-column .auto-grid::-webkit-scrollbar-thumb {
+    background: var(--color-border-light);
+    border-radius: 3px;
+}
+
+.auto-preview-column {
+    display: flex;
+    align-items: flex-start;
+}
+
+.auto-preview-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.auto-preview-map {
+    width: 100%;
+}
+
+.auto-next-btn {
+    width: 100%;
+}
+
+/* ========================================
+   MATCH PHASE PANEL
+   ======================================== */
+
+.match-phase-panel {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.match-phase-panel h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.phase-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-primary);
+    letter-spacing: 1.5px;
+}
+
+.hub-status {
+    text-align: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.hub-status.active {
+    background: rgba(76, 175, 120, 0.2);
+    color: var(--color-success);
+    border: 1px solid var(--color-success);
+}
+
+.hub-status.inactive {
+    background: rgba(217, 74, 74, 0.2);
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger);
+}
+
+/* ========================================
+   STATUS INDICATORS (Shooter/Suzie chips)
+   ======================================== */
+
+.status-indicators {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.status-chip {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-chip.good {
+    background: rgba(76, 175, 120, 0.2);
+    color: var(--color-success);
+    border: 1px solid rgba(76, 175, 120, 0.4);
+}
+
+.status-chip.bad {
+    background: rgba(217, 74, 74, 0.2);
+    color: var(--color-danger);
+    border: 1px solid rgba(217, 74, 74, 0.4);
+}
+
+/* ========================================
+   SHIFT PULSE ANIMATIONS
+   ======================================== */
+
+.shift-active,
+.shift-inactive {
+    position: relative;
+    border-radius: var(--radius-lg);
+    transition: border-color 0.3s ease;
+}
+
+.shift-active::before,
+.shift-inactive::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.shift-active {
+    background: var(--color-bg-dark);
+    border: 5px solid var(--color-success);
+    box-shadow: inset 0 0 60px rgba(76, 175, 120, 0.15), 0 0 20px rgba(76, 175, 120, 0.2);
+}
+
+.shift-active::before {
+    animation: overlayPulseGreen 1.5s ease-in-out infinite;
+}
+
+.shift-inactive {
+    background: var(--color-bg-dark);
+    border: 5px solid var(--color-danger);
+    box-shadow: inset 0 0 60px rgba(217, 74, 74, 0.15), 0 0 20px rgba(217, 74, 74, 0.2);
+}
+
+.shift-inactive::before {
+    animation: overlayPulseRed 1.5s ease-in-out infinite;
+}
+
+@keyframes overlayPulseGreen {
+    0%   { background-color: rgba(76, 175, 120, 0.05); }
+    50%  { background-color: rgba(76, 175, 120, 0.25); }
+    100% { background-color: rgba(76, 175, 120, 0.05); }
+}
+
+@keyframes overlayPulseRed {
+    0%   { background-color: rgba(217, 74, 74, 0.05); }
+    50%  { background-color: rgba(217, 74, 74, 0.25); }
+    100% { background-color: rgba(217, 74, 74, 0.05); }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN FOR STAGES
+   ======================================== */
+
 @media (max-width: 1200px) {
     .autonomous-layout,
     .teleop-layout {
-        grid-template-columns: 1fr;
+        height: auto;
     }
-    
+
+    .teleop-info-bar,
+    .auto-info-bar {
+        flex-wrap: wrap;
+    }
+
     .auto-sidebar,
     .teleop-sidebar {
         order: -1;
     }
+
+    .auto-selection-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .auto-grid-column .auto-grid {
+        max-height: 300px;
+    }
+
+    .turret-row {
+        flex-wrap: wrap;
+    }
 }
 
 @media (max-width: 768px) {
-    .auto-grid {
-        grid-template-columns: 1fr;
-    }
-    
     .confirmation-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .highlight-card {
         grid-column: span 1;
     }
-    
+
     .auto-timer,
     .teleop-timer {
         font-size: 2rem;
     }
-    
+
     .result-text {
         font-size: 1.5rem;
     }
-    
+
     .stat-value-large {
         font-size: 2.5rem;
     }

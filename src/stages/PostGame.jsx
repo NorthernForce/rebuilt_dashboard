@@ -1,15 +1,14 @@
 import { useEntry } from '@frc-web-components/react/networktables';
 
 export default function PostGame({ matchStats, resetDashboard }) {
-  const [scoring] = useEntry('/Dashboard/Scoring', { coral: 0, algae: 0 });
-  const [stats] = useEntry('/Dashboard/Stats', { 
+  const [ballsScored] = useEntry('/Dashboard/Scoring', 0);
+  const [stats] = useEntry('/Dashboard/Stats', {
     totalPoints: matchStats.totalPoints,
     autoPoints: matchStats.autoPoints,
     endGamePoints: matchStats.endGamePoints
   });
 
-  const coralScored = scoring?.coral || 0;
-  const algaeScored = scoring?.algae || 0;
+  const scored = typeof ballsScored === 'number' ? ballsScored : 0;
   const totalPoints = stats?.totalPoints || matchStats.totalPoints;
   const autoPoints = stats?.autoPoints || matchStats.autoPoints;
   const endGamePoints = stats?.endGamePoints || matchStats.endGamePoints;
@@ -44,12 +43,12 @@ export default function PostGame({ matchStats, resetDashboard }) {
           <h3>Teleoperated</h3>
           <div className="stat-breakdown">
             <div className="stat-row">
-              <span>Coral Scored:</span>
-              <span>{coralScored}</span>
+              <span>Balls Scored:</span>
+              <span>{scored}</span>
             </div>
             <div className="stat-row">
-              <span>Algae Scored:</span>
-              <span>{algaeScored}</span>
+              <span>Points:</span>
+              <span>{scored}</span>
             </div>
           </div>
         </div>
@@ -66,7 +65,7 @@ export default function PostGame({ matchStats, resetDashboard }) {
       </div>
 
       <button className="btn btn-primary btn-large" onClick={resetDashboard}>
-        🔄 Start New Match
+        Start New Match
       </button>
     </div>
   );

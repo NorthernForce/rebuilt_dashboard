@@ -1,117 +1,144 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useEntry } from '@frc-web-components/react/networktables';
+import FieldMap from '../components/FieldMap';
+import { computeMatchPhase } from '../utils/matchPhase';
 
 export default function Teleop({ goToStage, setMatchStats }) {
-  const [timeRemaining, setTimeRemaining] = useState(135);
-  
-  const [scoring] = useEntry('/Dashboard/Scoring', { coral: 0, algae: 0 });
-  const [alignment] = useEntry('/Dashboard/Alignment', { distance: 0, angle: 0, aligned: false });
-  const [battery] = useEntry('/Dashboard/battery', 12.0);
-  const [subsystems] = useEntry('/Dashboard/Subsystems', { intake: 'Unknown', shooter: 'Unknown', climber: 'Unknown' });
+  const [timeRemaining, setTimeRemaining] = useState(140);
+  const hasTransitioned = useRef(false);
 
-  const coralScored = scoring?.coral || 0;
-  const algaeScored = scoring?.algae || 0;
-  const alignmentDistance = alignment?.distance || 0;
-  const alignmentAngle = alignment?.angle || 0;
-  const aligned = alignment?.aligned || false;
-  const batteryVoltage = battery || 12.0;
-  const intakeStatus = subsystems?.intake || 'Unknown';
-  const shooterStatus = subsystems?.shooter || 'Unknown';
-  const climberStatus = subsystems?.climber || 'Unknown';
+  // Scoring - balls scored (1 point each)
+  const [ballsScored] = useEntry('/Dashboard/Scoring', 0);
 
+  const [poseX] = useEntry('/Robot/Drive/PoseX', 0);
+  const [poseY] = useEntry('/Robot/Drive/PoseY', 0);
+  const [poseHeading] = useEntry('/Robot/Drive/PoseHeading', 0);
+  const [fmsInfo] = useEntry('/FMSInfo', { IsRedAlliance: false, GameSpecificMessage: '', FMSControlData: 0 });
+
+  // Key subsystem status
+  const [shooterSpeed] = useEntry('/Robot/Turret/Shooter/Speed', 0);
+  const [shooterTarget] = useEntry('/Robot/Turret/Shooter/TargetSpeed', 0);
+  const [suzieAtTarget] = useEntry('/Robot/Turret/Suzie/IsAtTarget', false);
+  const [inShootingRange] = useEntry('/Robot/Turret/InShootingRange', false);
+
+  const scored = typeof ballsScored === 'number' ? ballsScored : 0;
+
+  const robotX = typeof poseX === 'number' ? poseX : 0;
+  const robotY = typeof poseY === 'number' ? poseY : 0;
+  const robotHeading = typeof poseHeading === 'number' ? poseHeading : 0;
+  const isRedAlliance = fmsInfo?.IsRedAlliance || false;
+  const gameSpecificMessage = fmsInfo?.GameSpecificMessage || '';
+  const fmsControlData = fmsInfo?.FMSControlData || 0;
+
+  const isEnabled = (fmsControlData & 0x01) !== 0;
+
+  // Compute match phase
+  const { hubState, phaseName } = computeMatchPhase(gameSpecificMessage, isRedAlliance, timeRemaining);
+
+  const shooterRPM = (shooterSpeed || 0) * 60;
+  const shooterTargetRPM = (shooterTarget || 0) * 60;
+  const shooterAtSpeed = Math.abs(shooterRPM - shooterTargetRPM) < 50 && shooterTargetRPM > 0;
+
+  // FMS-driven transition: when FMS disables the robot (match over), go to postGame
+  const wasEnabled = useRef(false);
   useEffect(() => {
+    if (isEnabled) {
+      wasEnabled.current = true;
+    }
+    if (wasEnabled.current && !isEnabled && !hasTransitioned.current) {
+      hasTransitioned.current = true;
+      setMatchStats({
+        totalPoints: scored,
+        autoPoints: 0,
+        teleopPoints: scored,
+        endGamePoints: 0
+      });
+      goToStage('postGame');
+    }
+  }, [isEnabled, goToStage, scored, setMatchStats]);
+
+  // Local timer fallback (for testing without FMS) + header time display
+  useEffect(() => {
+    // Set initial header time when entering teleop
+    const matchTimeEl = document.getElementById('matchTime');
+    if (matchTimeEl) {
+      matchTimeEl.textContent = `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`;
+    }
+
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          setMatchStats({
-            totalPoints: (coralScored * 5) + (algaeScored * 3),
-            autoPoints: 0,
-            teleopPoints: (coralScored * 5) + (algaeScored * 3),
-            endGamePoints: 0
-          });
-          setTimeout(() => goToStage('postGame'), 1000);
+          if (matchTimeEl) matchTimeEl.textContent = '0:00';
+          if (!hasTransitioned.current) {
+            hasTransitioned.current = true;
+            setMatchStats({
+              totalPoints: scored,
+              autoPoints: 0,
+              teleopPoints: scored,
+              endGamePoints: 0
+            });
+            setTimeout(() => goToStage('postGame'), 1000);
+          }
           return 0;
         }
-        document.getElementById('matchTime').textContent = `${Math.floor(prev / 60)}:${(prev % 60).toString().padStart(2, '0')}`;
-        return prev - 1;
+        const next = prev - 1;
+        if (matchTimeEl) {
+          matchTimeEl.textContent = `${Math.floor(next / 60)}:${(next % 60).toString().padStart(2, '0')}`;
+        }
+        return next;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [goToStage, coralScored, algaeScored, setMatchStats]);
-
-  const minutes = Math.floor(timeRemaining / 60);
-  const seconds = timeRemaining % 60;
+  }, [goToStage, scored, setMatchStats]);
 
   return (
-    <div className="stage-container-full">
+    <div className={`stage-container-full ${hubState === 'active' ? 'shift-active' : 'shift-inactive'}`}>
 
       <div className="teleop-layout">
-        <div className="camera-feed-container">
-          <div className="camera-placeholder">
-            <p>Camera Feed</p>
-            <p>Waiting for stream...</p>
-          </div>
-          <div className="camera-overlay">
-            <div className="crosshair"></div>
-          </div>
+        <div className="field-visualization">
+          <FieldMap
+            robotPose={{ x: robotX, y: robotY, heading: robotHeading }}
+            showRobot={true}
+            alliance={isRedAlliance ? 'red' : 'blue'}
+            paths={[]}
+          />
         </div>
 
-        <div className="teleop-sidebar">
-          <div className="scoring-panel">
-            <h3>Scoring Status</h3>
-            <div className="score-grid">
-              <div className="score-item">
-                <div className="score-label">Coral Scored</div>
-                <div className="score-value">{coralScored}</div>
+        <div className="teleop-info-bar">
+          <div className="info-bar-panel match-phase-panel">
+            <h3>Match Phase</h3>
+            <div className="phase-name">{phaseName}</div>
+            <div className={`hub-status ${hubState}`}>
+              Hub: {hubState === 'active' ? 'ACTIVE' : 'INACTIVE'}
+            </div>
+          </div>
+
+          <div className="info-bar-panel scoring-panel">
+            <h3>Scoring</h3>
+            <div className="score-inline">
+              <span className="score-label">Balls</span>
+              <span className="score-value">{scored}</span>
+            </div>
+          </div>
+
+          <div className="info-bar-panel status-panel">
+            <h3>Status</h3>
+            <div className="status-indicators">
+              <div className={`status-chip ${shooterAtSpeed ? 'good' : 'bad'}`}>
+                Shooter: {shooterAtSpeed ? 'AT SPEED' : 'SPINNING UP'}
               </div>
-              <div className="score-item">
-                <div className="score-label">Algae Scored</div>
-                <div className="score-value">{algaeScored}</div>
+              <div className={`status-chip ${suzieAtTarget ? 'good' : 'bad'}`}>
+                Suzie: {suzieAtTarget ? 'ON TARGET' : 'ROTATING'}
+              </div>
+              <div className={`status-chip ${inShootingRange ? 'good' : 'bad'}`}>
+                {inShootingRange ? 'IN RANGE' : 'OUT OF RANGE'}
               </div>
             </div>
           </div>
 
-          <div className="reef-alignment-panel">
-            <h3>Reef Alignment</h3>
-            <div className="alignment-visual">
-              <div className="alignment-text">
-                Distance: {alignmentDistance.toFixed(1)} cm
-              </div>
-              <div className="alignment-text">
-                Angle: {alignmentAngle.toFixed(1)}°
-              </div>
-              <div className="indicator-row ready-indicator">
-                <span className="indicator-label">Ready to Score:</span>
-                <span className={`indicator-box ${aligned ? 'active' : ''}`}>
-                  {aligned ? '✓' : '✗'}
-                </span>
-              </div>
-            </div>
-          </div>
 
-          <div className="robot-status-panel">
-            <h3>Robot Status</h3>
-            <div className="status-grid">
-              <div className="status-item">
-                <span>Battery:</span>
-                <span>{batteryVoltage.toFixed(1)}V</span>
-              </div>
-              <div className="status-item">
-                <span>Intake:</span>
-                <span>{intakeStatus}</span>
-              </div>
-              <div className="status-item">
-                <span>Shooter:</span>
-                <span>{shooterStatus}</span>
-              </div>
-              <div className="status-item">
-                <span>Climber:</span>
-                <span>{climberStatus}</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
