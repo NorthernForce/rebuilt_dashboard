@@ -6,7 +6,7 @@ $chrome = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 $compMode = $false
 
-while ($true) {
+while (!$compMode) {
 
     $status = (Get-NetAdapter -Name $adapter).Status
 
