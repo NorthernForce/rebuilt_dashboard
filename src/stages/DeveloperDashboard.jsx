@@ -9,6 +9,7 @@ const VALUE_BOOLEAN_PREFIX = '/NFRDashboard/booleans/';
 const VALUE_NUMBER_PREFIX = '/NFRDashboard/numbers/';
 const VALUE_STRING_PREFIX = '/NFRDashboard/strings/';
 const SYSTEMS_PREFIX = '/NFRDashboard/systems/';
+const CAMERA_STREAM_PREFIX = '/NFRDashboard/cameraStreams/';
 
 function getTopicKeys(data) {
   if (!data) return [];
@@ -26,6 +27,7 @@ const VALUE_BOOLEAN_REGEX = /^\/NFRDashboard\/booleans\/([^/]+)\/value$/;
 const VALUE_NUMBER_REGEX = /^\/NFRDashboard\/numbers\/([^/]+)\/value$/;
 const VALUE_STRING_REGEX = /^\/NFRDashboard\/strings\/([^/]+)\/value$/;
 const SYSTEM_ROOT_REGEX = /^\/NFRDashboard\/systems\/([^/]+)\/(.+)$/;
+const CAMERA_STREAM_REGEX = /^\/NFRDashboard\/cameraStreams\/([^/]+)$/;
 
 function toCommandList(topics, values) {
   const commands = new Map();
@@ -296,6 +298,30 @@ function toSystemList(topics, values) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function toCameraStreamList(topics, values) {
+  const streams = new Map();
+  const keys = new Set([...getTopicKeys(topics), ...getTopicKeys(values || {})]);
+
+  const getValue = (k) => {
+    if (!values) return undefined;
+    if (values instanceof Map) return values.get(k);
+    return values[k];
+  };
+
+  keys.forEach((topic) => {
+    const match = CAMERA_STREAM_REGEX.exec(topic);
+    if (!match) return;
+
+    const name = match[1];
+    const raw = getValue(topic);
+    const url = raw == null ? '' : String(raw);
+
+    streams.set(name, { id: name, name, url });
+  });
+
+  return Array.from(streams.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export default function DeveloperDashboard() {
   const { nt4Provider } = useNt4();
   const [commands, setCommands] = useState([]);
@@ -306,6 +332,7 @@ export default function DeveloperDashboard() {
   const [submittedTunables, setSubmittedTunables] = useState({});
   const [systems, setSystems] = useState([]);
   const [expandedSystems, setExpandedSystems] = useState({});
+  const [cameraStreams, setCameraStreams] = useState([]);
   const requestIdsRef = useRef(new Map());
 
   const syncCommands = useCallback(() => {
@@ -332,6 +359,12 @@ export default function DeveloperDashboard() {
     setSystems(nextSystems);
   }, [nt4Provider]);
 
+  const syncCameraStreams = useCallback(() => {
+    if (!nt4Provider) return;
+    const next = toCameraStreamList(nt4Provider.topics, nt4Provider.topicValues || {});
+    setCameraStreams(next);
+  }, [nt4Provider]);
+
   useEffect(() => {
     if (!nt4Provider) return;
 
@@ -347,7 +380,8 @@ export default function DeveloperDashboard() {
           VALUE_BOOLEAN_PREFIX,
           VALUE_NUMBER_PREFIX,
           VALUE_STRING_PREFIX,
-          SYSTEMS_PREFIX
+          SYSTEMS_PREFIX,
+          CAMERA_STREAM_PREFIX
         ],
         true
       );
@@ -357,12 +391,14 @@ export default function DeveloperDashboard() {
     syncTunables();
     syncValues();
     syncSystems();
+    syncCameraStreams();
 
     const interval = setInterval(() => {
       syncCommands();
       syncTunables();
       syncValues();
       syncSystems();
+      syncCameraStreams();
     }, 250);
 
     return () => {
@@ -371,7 +407,14 @@ export default function DeveloperDashboard() {
         client.unsubscribe(subscriptionId);
       }
     };
-  }, [nt4Provider, syncCommands, syncTunables, syncValues, syncSystems]);
+  }, [
+    nt4Provider,
+    syncCommands,
+    syncTunables,
+    syncValues,
+    syncSystems,
+    syncCameraStreams
+  ]);
 
   const setDraftValue = (tunable, value) => {
     setTunableDrafts((prev) => ({ ...prev, [tunable.id]: value }));
@@ -823,6 +866,49 @@ export default function DeveloperDashboard() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      <div className="developer-headline" style={{ marginTop: 16 }}>
+        <h2 className="stage-title">Camera Streams</h2>
+      </div>
+
+      {cameraStreams.length === 0 ? (
+        <div className="developer-empty">
+          Waiting for camera streams under <strong>/NFRDashboard/cameraStreams</strong>
+        </div>
+      ) : (
+        <div className="developer-command-grid">
+          {cameraStreams.map((stream) => (
+            <div key={stream.id} className="developer-command-btn" style={{ display: 'grid', gap: 8 }}>
+              <span className="command-name">{stream.name}</span>
+
+              {/* Live stream preview (works for MJPEG/http image streams) */}
+              <img
+                src={stream.url}
+                alt={`${stream.name} live stream`}
+                style={{
+                  width: '100%',
+                  maxHeight: 220,
+                  objectFit: 'cover',
+                  borderRadius: 10,
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  background: 'rgba(0,0,0,0.25)'
+                }}
+                loading="lazy"
+              />
+
+              <a
+                href={stream.url}
+                target="_blank"
+                rel="noreferrer"
+                className="command-state"
+                style={{ wordBreak: 'break-all' }}
+              >
+                {stream.url}
+              </a>
+            </div>
+          ))}
         </div>
       )}
     </section>
