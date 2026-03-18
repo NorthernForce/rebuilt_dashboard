@@ -5,9 +5,11 @@ import Confirmation from './stages/Confirmation';
 import Autonomous from './stages/Autonomous';
 import Teleop from './stages/Teleop';
 import PostGame from './stages/PostGame';
+import DeveloperDashboard from './stages/DeveloperDashboard';
 
 export default function App() {
   const [stage, setStage] = useState('autoSelection');
+  const [viewMode, setViewMode] = useState('driver');
   const [selectedAuto, setSelectedAuto] = useState(null);
   const [matchStats, setMatchStats] = useState({
     totalPoints: 0,
@@ -34,34 +36,36 @@ export default function App() {
 
   return (
     <div id="app">
-      <Header stage={stage} />
+      <Header stage={stage} viewMode={viewMode} setViewMode={setViewMode} />
       <main id="mainContent">
-        {stage === 'autoSelection' && (
+        {viewMode === 'developer' && <DeveloperDashboard />}
+
+        {viewMode === 'driver' && stage === 'autoSelection' && (
           <AutoSelection 
             selectedAuto={selectedAuto}
             setSelectedAuto={setSelectedAuto}
             goToStage={goToStage}
           />
         )}
-        {stage === 'confirmation' && (
+        {viewMode === 'driver' && stage === 'confirmation' && (
           <Confirmation 
             selectedAuto={selectedAuto}
             goToStage={goToStage}
           />
         )}
-        {stage === 'autonomous' && (
+        {viewMode === 'driver' && stage === 'autonomous' && (
           <Autonomous 
             selectedAuto={selectedAuto}
             goToStage={goToStage}
           />
         )}
-        {stage === 'teleop' && (
+        {viewMode === 'driver' && stage === 'teleop' && (
           <Teleop 
             goToStage={goToStage}
             setMatchStats={setMatchStats}
           />
         )}
-        {stage === 'postGame' && (
+        {viewMode === 'driver' && stage === 'postGame' && (
           <PostGame 
             matchStats={matchStats}
             resetDashboard={resetDashboard}
