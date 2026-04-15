@@ -12,6 +12,7 @@ export default function FieldMap({
   paths = [],
   robotPose = null,
   showRobot = false,
+  robots = null,   // Array<{ name: string, x: number, y: number, heading: number }>
   alliance = 'blue',
   width = 800,
   className = '',
@@ -75,35 +76,30 @@ export default function FieldMap({
       ctx.fill();
     });
 
-    // --- Robot ---
-    if (showRobot && robotPose) {
-      const pos = toCanvas(robotPose.x, robotPose.y);
+    // --- Robot drawing helper ---
+    const drawRobot = (x, y, heading, label, color) => {
+      const pos = toCanvas(x, y);
       const robotSizePx = (ROBOT_SIZE_M / FIELD_WIDTH_M) * width;
-      const headingRad = -(robotPose.heading * Math.PI) / 180;
+      const headingRad = -(heading * Math.PI) / 180;
+      const half = robotSizePx / 2;
 
       ctx.save();
       ctx.translate(pos.x, pos.y);
       ctx.rotate(headingRad);
 
-      const half = robotSizePx / 2;
-      const allianceColor = alliance === 'red' ? '#d94a4a' : '#4a90d9';
-
-      // Square outline
-      ctx.strokeStyle = allianceColor;
+      ctx.strokeStyle = color;
       ctx.lineWidth = 2.5;
       ctx.strokeRect(-half, -half, robotSizePx, robotSizePx);
 
-      // Arrow pointing to front (+x direction)
       const arrowLen = half * 0.7;
       const arrowHead = half * 0.3;
       ctx.beginPath();
       ctx.moveTo(-arrowLen, 0);
       ctx.lineTo(arrowLen, 0);
-      ctx.strokeStyle = allianceColor;
+      ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Arrowhead
       ctx.beginPath();
       ctx.moveTo(arrowLen, 0);
       ctx.lineTo(arrowLen - arrowHead, -arrowHead * 0.6);
@@ -112,8 +108,34 @@ export default function FieldMap({
       ctx.stroke();
 
       ctx.restore();
+
+      // Label above the robot (drawn after restore so it's unrotated)
+      if (label) {
+        const fontSize = Math.max(10, Math.round(robotSizePx * 0.38));
+        ctx.save();
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowColor = 'rgba(0,0,0,0.95)';
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(label, pos.x, pos.y - half - 3);
+        ctx.restore();
+      }
+    };
+
+    // --- Named robots array ---
+    if (robots && robots.length > 0) {
+      const color = alliance === 'red' ? '#d94a4a' : '#4a90d9';
+      robots.forEach(({ name, x, y, heading }) => drawRobot(x, y, heading, name, color));
     }
-  }, [paths, robotPose, showRobot, alliance, width, height, fieldImage]);
+
+    // --- Legacy single robot ---
+    if (showRobot && robotPose) {
+      const color = alliance === 'red' ? '#d94a4a' : '#4a90d9';
+      drawRobot(robotPose.x, robotPose.y, robotPose.heading, null, color);
+    }
+  }, [paths, robotPose, showRobot, robots, alliance, width, height, fieldImage]);
 
   return (
     <div className={`field-map-container ${className}`}>

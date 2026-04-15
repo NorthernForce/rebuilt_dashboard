@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useEntry } from '@frc-web-components/react/networktables';
 import FieldMap from '../components/FieldMap';
 import { computeMatchPhase } from '../utils/matchPhase';
+import NTTabView from './NTTabView';
 
 export default function Teleop({ goToStage, setMatchStats }) {
   const [timeRemaining, setTimeRemaining] = useState(140);
@@ -138,6 +139,10 @@ export default function Teleop({ goToStage, setMatchStats }) {
             </div>
           </div>
 
+          <div className="info-bar-panel status-panel" style={{ overflowY: 'auto', maxHeight: '100%' }}>
+            <h3>Match Controls</h3>
+            <NTTabView tabName="Match" layout="panel" />
+          </div>
 
         </div>
       </div>

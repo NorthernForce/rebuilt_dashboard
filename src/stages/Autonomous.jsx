@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useEntry, useNt4 } from '@frc-web-components/react/networktables';
+import { useEntry } from '@frc-web-components/react/networktables';
 import FieldMap from '../components/FieldMap';
 import { loadAutoPaths, computeBezierPoints } from '../utils/pathLoader';
+import NTTabView from './NTTabView';
 
 export default function Autonomous({ selectedAuto, goToStage }) {
   const [timeRemaining, setTimeRemaining] = useState(20);
@@ -126,11 +127,10 @@ export default function Autonomous({ selectedAuto, goToStage }) {
             </div>
           </div>
 
-          <div className="info-bar-panel status-panel">
-            <h3>NT Debug</h3>
-            <NTDebug />
+          <div className="info-bar-panel status-panel" style={{ overflowY: 'auto', maxHeight: '100%' }}>
+            <h3>Match Controls</h3>
+            <NTTabView tabName="Match" layout="panel" />
           </div>
-
 
         </div>
       </div>
@@ -138,42 +138,3 @@ export default function Autonomous({ selectedAuto, goToStage }) {
   );
 }
 
-function NTDebug() {
-  const { nt4Provider } = useNt4();
-  const [info, setInfo] = useState({ connected: false, topics: [], values: {} });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!nt4Provider) return;
-      const connected = nt4Provider.connected || false;
-      const allTopics = nt4Provider.topics ? Object.entries(nt4Provider.topics).map(([name, t]) => ({
-        name,
-        type: t?.type || '?'
-      })) : [];
-      const values = nt4Provider.topicValues || {};
-      setInfo({ connected, topics: allTopics, values });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [nt4Provider]);
-
-  const poseTopics = info.topics.filter(t => /pose|drive|odometry/i.test(t.name));
-
-  return (
-    <div style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#9a9aaa', maxHeight: '200px', overflowY: 'auto' }}>
-      <div>Connected: {info.connected ? 'YES' : 'NO'}</div>
-      <div>Total topics: {info.topics.length}</div>
-      <div style={{ marginTop: '4px', borderTop: '1px solid #2e2e3a', paddingTop: '4px' }}>
-        <div style={{ color: '#e6b422' }}>Pose/Drive topics:</div>
-        {poseTopics.length === 0 ? <div>None found</div> : poseTopics.map(t => (
-          <div key={t.name} style={{ marginLeft: '4px' }}>
-            <span style={{ color: '#4a90d9' }}>{t.name}</span>
-            <span style={{ color: '#606070' }}> [{t.type}]</span>
-            <div style={{ color: '#4caf78', marginLeft: '8px' }}>
-              = {JSON.stringify(info.values[t.name])?.substring(0, 80)}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}

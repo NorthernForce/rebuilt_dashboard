@@ -19,21 +19,21 @@ function getTopicKeys(data) {
   return [];
 }
 
-const COMMAND_FIELD_REGEX = /^\/NFRDashboard\/commands\/([^/]+)(?:\/(name|running))?$/;
-const TUNABLE_BOOLEAN_REGEX = /^\/NFRDashboard\/tunableBooleans\/([^/]+)\/(value|changed)$/;
-const TUNABLE_NUMBER_REGEX = /^\/NFRDashboard\/tunableNumbers\/([^/]+)\/(value|changed)$/;
-const TUNABLE_STRING_REGEX = /^\/NFRDashboard\/tunableStrings\/([^/]+)\/(value|changed)$/;
-const VALUE_BOOLEAN_REGEX = /^\/NFRDashboard\/booleans\/([^/]+)\/value$/;
-const VALUE_NUMBER_REGEX = /^\/NFRDashboard\/numbers\/([^/]+)\/value$/;
-const VALUE_STRING_REGEX = /^\/NFRDashboard\/strings\/([^/]+)\/value$/;
+// Backend path format: /<table>/<section>/<tab>/<name>/<field>
+const COMMAND_FIELD_REGEX = /^\/NFRDashboard\/commands\/([^/]+)\/([^/]+)(?:\/(running|requestId|lastHandledRequestId|requested|tab))?$/;
+const TUNABLE_BOOLEAN_REGEX = /^\/NFRDashboard\/tunableBooleans\/([^/]+)\/([^/]+)\/(value|changed|tab)$/;
+const TUNABLE_NUMBER_REGEX = /^\/NFRDashboard\/tunableNumbers\/([^/]+)\/([^/]+)\/(value|changed|tab)$/;
+const TUNABLE_STRING_REGEX = /^\/NFRDashboard\/tunableStrings\/([^/]+)\/([^/]+)\/(value|changed|tab)$/;
+const VALUE_BOOLEAN_REGEX = /^\/NFRDashboard\/booleans\/([^/]+)\/([^/]+)\/value$/;
+const VALUE_NUMBER_REGEX = /^\/NFRDashboard\/numbers\/([^/]+)\/([^/]+)\/value$/;
+const VALUE_STRING_REGEX = /^\/NFRDashboard\/strings\/([^/]+)\/([^/]+)\/value$/;
 const SYSTEM_ROOT_REGEX = /^\/NFRDashboard\/systems\/([^/]+)\/(.+)$/;
-const CAMERA_STREAM_REGEX = /^\/NFRDashboard\/cameraStreams\/([^/]+)$/;
+// Camera streams: /NFRDashboard/cameraStreams/<tab>/<name>/<url|tab|name>
+const CAMERA_STREAM_REGEX = /^\/NFRDashboard\/cameraStreams\/([^/]+)\/([^/]+)\/(url|tab|name)$/;
 
 function toCommandList(topics, values) {
   const commands = new Map();
   const keys = new Set([...getTopicKeys(topics), ...getTopicKeys(values || {})]);
-
-  const hasKey = (k) => keys.has(k);
 
   const getValue = (k) => {
     if (!values) return undefined;
@@ -45,15 +45,17 @@ function toCommandList(topics, values) {
     const match = COMMAND_FIELD_REGEX.exec(topic);
     if (!match) return;
 
-    const commandId = match[1];
-    const field = match[2];
-    const baseTopic = `${COMMAND_PREFIX}${commandId}`;
-    const runningTopic = hasKey(baseTopic) ? baseTopic : `${baseTopic}/running`;
+    const tab = match[1];
+    const commandName = match[2];
+    const field = match[3];
+    const commandId = `${tab}/${commandName}`;
+    const baseTopic = `${COMMAND_PREFIX}${tab}/${commandName}`;
+    const runningTopic = `${baseTopic}/running`;
 
     const command = commands.get(commandId) || {
       id: commandId,
-      name: commandId,
-      nameTopic: `${baseTopic}/name`,
+      name: commandName,
+      tab,
       runningTopic,
       requestIdTopic: `${baseTopic}/requestId`,
       running: false
@@ -61,16 +63,12 @@ function toCommandList(topics, values) {
 
     if (field === 'running') {
       command.running = Boolean(getValue(topic));
-    } else if (!field) {
-      command.running = Boolean(getValue(topic));
-    } else if (field === 'name') {
-      // currently unused because topic is the same thing
+    } else if (field === 'requestId' || field === 'lastHandledRequestId' || field === 'requested' || field === 'tab') {
+      // metadata fields, no action needed
     }
 
-    if (!command.running) {
-      const altRunningValue = getValue(runningTopic);
-      if (typeof altRunningValue !== 'undefined') command.running = Boolean(altRunningValue);
-    }
+    const runningValue = getValue(runningTopic);
+    if (typeof runningValue !== 'undefined') command.running = Boolean(runningValue);
 
     commands.set(commandId, command);
   });
@@ -102,8 +100,9 @@ function toTunableList(topics, values) {
     }
     if (!match) return;
 
-    const name = match[1];
-    const field = match[2];
+    const tab = match[1];
+    const name = match[2];
+    const field = match[3];
 
     const basePrefix =
       type === 'boolean'
@@ -112,13 +111,15 @@ function toTunableList(topics, values) {
           ? TUNABLE_NUMBER_PREFIX
           : TUNABLE_STRING_PREFIX;
 
-    const baseTopic = `${basePrefix}${name}`;
+    const baseTopic = `${basePrefix}${tab}/${name}`;
     const valueTopic = `${baseTopic}/value`;
     const changedTopic = `${baseTopic}/changed`;
+    const tunableId = `${type}:${tab}/${name}`;
 
-    const existing = tunables.get(`${type}:${name}`) || {
-      id: `${type}:${name}`,
+    const existing = tunables.get(tunableId) || {
+      id: tunableId,
       name,
+      tab,
       type,
       valueTopic,
       changedTopic,
@@ -138,7 +139,7 @@ function toTunableList(topics, values) {
     tunables.set(existing.id, existing);
   });
 
-  return Array.from(tunables.values()).sort((a, b) => a.name.localeCompare(b.name));
+  return Array.from(tunables.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 function toValueList(topics, values) {
@@ -165,8 +166,10 @@ function toValueList(topics, values) {
     }
     if (!match) return;
 
-    const name = match[1];
+    const tab = match[1];
+    const name = match[2];
     const raw = getValue(topic);
+    const itemId = `${type}:${tab}/${name}`;
 
     const value =
       type === 'boolean'
@@ -175,21 +178,23 @@ function toValueList(topics, values) {
           ? (typeof raw === 'number' ? raw : Number(raw ?? 0))
           : (raw == null ? '' : String(raw));
 
-    items.set(`${type}:${name}`, { id: `${type}:${name}`, name, type, value });
+    items.set(itemId, { id: itemId, name, tab, type, value });
   });
 
   return Array.from(items.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function parseSystemRelativeTopic(relativeTopic) {
+  // Format: <category>/<tab>/<name>/<field>
   const parts = relativeTopic.split('/');
-  if (parts.length < 2) return null;
+  if (parts.length < 3) return null;
 
   const category = parts[0];
-  const name = parts[1];
-  const field = parts[2];
+  const tab = parts[1];
+  const name = parts[2];
+  const field = parts[3];
 
-  return { category, name, field };
+  return { category, tab, name, field };
 }
 
 function toSystemList(topics, values) {
@@ -223,21 +228,21 @@ function toSystemList(topics, values) {
     const parsed = parseSystemRelativeTopic(relative);
     if (!parsed) return;
 
-    const { category, name, field } = parsed;
+    const { category, tab, name, field } = parsed;
     const raw = getValue(topic);
     const system = ensureSystem(systemName);
 
     if (category === 'commands') {
-      const id = name;
+      const id = `${tab}/${name}`;
       const command = system.commands.get(id) || {
         id,
-        name: id,
+        name,
+        tab,
         running: false,
-        requestIdTopic: `${SYSTEMS_PREFIX}${systemName}/commands/${id}/requestId`
+        requestIdTopic: `${SYSTEMS_PREFIX}${systemName}/commands/${tab}/${name}/requestId`
       };
 
       if (field === 'running') command.running = Boolean(raw);
-      if (!field) command.running = Boolean(raw);
 
       system.commands.set(id, command);
       return;
@@ -249,11 +254,12 @@ function toSystemList(topics, values) {
         category === 'tunableBooleans' ? 'boolean' :
         category === 'tunableNumbers' ? 'number' : 'string';
 
-      const id = `${type}:${name}`;
-      const baseTopic = `${SYSTEMS_PREFIX}${systemName}/${category}/${name}`;
+      const id = `${type}:${tab}/${name}`;
+      const baseTopic = `${SYSTEMS_PREFIX}${systemName}/${category}/${tab}/${name}`;
       const tunable = system.tunables.get(id) || {
         id,
         name,
+        tab,
         type,
         valueTopic: `${baseTopic}/value`,
         changedTopic: `${baseTopic}/changed`,
@@ -278,13 +284,13 @@ function toSystemList(topics, values) {
         category === 'booleans' ? 'boolean' :
         category === 'numbers' ? 'number' : 'string';
 
-      const id = `${type}:${name}`;
+      const id = `${type}:${tab}/${name}`;
       const value =
         type === 'boolean' ? Boolean(raw) :
         type === 'number' ? (typeof raw === 'number' ? raw : Number(raw ?? 0)) :
         (raw == null ? '' : String(raw));
 
-      system.values.set(id, { id, name, type, value });
+      system.values.set(id, { id, name, tab, type, value });
     }
   });
 
@@ -312,11 +318,17 @@ function toCameraStreamList(topics, values) {
     const match = CAMERA_STREAM_REGEX.exec(topic);
     if (!match) return;
 
-    const name = match[1];
-    const raw = getValue(topic);
-    const url = raw == null ? '' : String(raw);
+    const tab = match[1];
+    const name = match[2];
+    const field = match[3];
+    const streamId = `${tab}/${name}`;
 
-    streams.set(name, { id: name, name, url });
+    const stream = streams.get(streamId) || { id: streamId, name, tab, url: '' };
+    if (field === 'url') {
+      const raw = getValue(topic);
+      stream.url = raw == null ? '' : String(raw);
+    }
+    streams.set(streamId, stream);
   });
 
   return Array.from(streams.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -399,7 +411,7 @@ export default function DeveloperDashboard() {
       syncValues();
       syncSystems();
       syncCameraStreams();
-    }, 250);
+    }, 50);
 
     return () => {
       clearInterval(interval);
